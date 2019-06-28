@@ -17,10 +17,10 @@ $ua = LWP::UserAgent->new;
 
 # Laziness Impatience Hubris - yeah, use CPAN, 50,000+ modules
 # Cover all the bases (you never know which parts are https)
-$ua->proxy([ 'http', 'https' ] => 'http://proxy.usi.edu:3128/');
+$ua->proxy( [ 'http', 'https' ] => 'http://proxy.usi.edu:3128/' );
 
-my $filerequest = HTTP::Request->new(GET => 'https://www.robert3t.com/')
- or die "Cannot access file:$!\n";
+my $filerequest = HTTP::Request->new( GET => 'https://www.robert3t.com/' )
+  or die "Cannot access file:$!\n";
 my $myfile = "ratindex.html";
 print "Clobbering old $myfile! (hope that *was* ok)\n" if -e $myfile;
 my $myrepsonse = $ua->simple_request( $filerequest, $myfile );

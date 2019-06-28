@@ -12,7 +12,7 @@
 #
 # Revision 8.11  2016/03/25 16:29:07  rat
 # Checking on weird errors caused by WC7525.  It is simply caused by the codes NOT
-# being in the DepartmentCodes list.  I added and older, more complete copy and 
+# being in the DepartmentCodes list.  I added and older, more complete copy and
 # got it down to just there:
 # (1) XSAcolorreportWC7525Jul232015.csv.txt: DIGEST IS 5d6e3bd8b82a1b28a558ff9914f29c22
 # (1) Processing a yet another color report: XSAcolorreportWC7525Jul232015.csv.txt
@@ -131,7 +131,7 @@
 # Needs location of Copier reports changed for Greg C.'s Mac.
 #
 # Revision 7.5  2015/10/02 15:38:55  rat
-# Cleaned up mistakes in ColorQube when WC3655 didn't work.  The print line (and 
+# Cleaned up mistakes in ColorQube when WC3655 didn't work.  The print line (and
 # variable names) must stay EXACTLY the same.  These are the values checked by
 # the PrintNoZeros subroutine.
 #
@@ -206,11 +206,11 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 
 # To switch between Mac/Linux, swap these 5 lines
 ##### Linux uses these 5 lines below
-$input = "/home/rat/workspace/XeroxAgain/DepartmentCodes.csv";
-$err = "/home/rat/workspace/XeroxAgain/xrxerr.log";
-$log = "/home/rat/workspace/XeroxAgain/xrxlog.log";
+$input   = "/home/rat/workspace/XeroxAgain/DepartmentCodes.csv";
+$err     = "/home/rat/workspace/XeroxAgain/xrxerr.log";
+$log     = "/home/rat/workspace/XeroxAgain/xrxlog.log";
 $reports = "/home/rat/workspace/XeroxAgain/CopierDownloads";
-$out = "/home/rat/workspace/XeroxAgain/myxrxrpt.csv";
+$out     = "/home/rat/workspace/XeroxAgain/myxrxrpt.csv";
 ##### Mac uses these 5 lines below
 # $input = "DepartmentCodes.csv";
 # $err = "xrxerr.log";
@@ -218,255 +218,327 @@ $out = "/home/rat/workspace/XeroxAgain/myxrxrpt.csv";
 # $reports = "/Users/gcarlisle/Desktop/CopierDownloads";
 # $out = "myxrxrpt.csv";
 
-open(OUT,">$out") or die "Cannot open myxrxrpt.csv: $!\n";
-$count = 0;	# report count
-$lnproc = 0;	# lines processed
-$WC5955_no = 0; # Count which subroutines called and how many.
-$WC7125_no = 0; # Same comment to $NoFax_no
-$WC5945_no = 0;
-$WC7830_no = 0;
-$WC3655_no = 0;
-$ColorQube_no = 0;
-$newQube_no = 0;
-$Qube_no = 0;
-$Color_no = 0;
+open( OUT, ">$out" ) or die "Cannot open myxrxrpt.csv: $!\n";
+$count         = 0;    # report count
+$lnproc        = 0;    # lines processed
+$WC5955_no     = 0;    # Count which subroutines called and how many.
+$WC7125_no     = 0;    # Same comment to $NoFax_no
+$WC5945_no     = 0;
+$WC7830_no     = 0;
+$WC3655_no     = 0;
+$ColorQube_no  = 0;
+$newQube_no    = 0;
+$Qube_no       = 0;
+$Color_no      = 0;
 $yetAnother_no = 0;
-$Regular_no = 0;
-$NoFax_no = 0;
-$rejected = 0;
+$Regular_no    = 0;
+$NoFax_no      = 0;
+$rejected      = 0;
 
-$header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+$header =
+  "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
 print OUT $header;
-%hashcodes=();
+%hashcodes = ();
 
-print "Running getReports.pl... reading in all *.csv.txt files from $reports\n\n";
+print
+  "Running getReports.pl... reading in all *.csv.txt files from $reports\n\n";
+
 # Stuff DepartmentCodes.csv into hash. e.g.
 # "42154","Panhellinic Council",84002,05110,802
-open(IN,"<$input") or die "Can't open $input: $!\n";
-open(ERR,">$err") or die "Can't open $err: $!\n";
-open(LOG,">$log") or die "Cannot open $log: $!\n";
-while(<IN>){
-	($digit5,$longname,$bannerfund,$org,$notsupposed2b) = split(/,/);
-	$bill2 = "$bannerfund" . "-" . "$org";
-	$digit5 =~ s/\"//g,$digit5;
-	$hashcodes{$digit5} = $bill2;
+open( IN,  "<$input" ) or die "Can't open $input: $!\n";
+open( ERR, ">$err" )   or die "Can't open $err: $!\n";
+open( LOG, ">$log" )   or die "Cannot open $log: $!\n";
+while (<IN>) {
+    ( $digit5, $longname, $bannerfund, $org, $notsupposed2b ) = split(/,/);
+    $bill2 = "$bannerfund" . "-" . "$org";
+    $digit5 =~ s/\"//g, $digit5;
+    $hashcodes{$digit5} = $bill2;
 }
 
 # Check directory for mislabeled reports
-# 
+#
 
-opendir(DIR, $reports);
-LINE: while($FILE = readdir(DIR)) {
-	next LINE if($FILE =~ /^\.\.?/);
-	## check to see if it is a directory
-	if(-d "$FILE"){
-		$directory_count++;
-	} else {
-		print "$FILE\n";
-		$file_count++;
-	}
+opendir( DIR, $reports );
+LINE: while ( $FILE = readdir(DIR) ) {
+    next LINE if ( $FILE =~ /^\.\.?/ );
+    ## check to see if it is a directory
+    if ( -d "$FILE" ) {
+        $directory_count++;
+    }
+    else {
+        print "$FILE\n";
+        $file_count++;
+    }
 }
 print "\n";
 closedir(DIR);
 
 chdir("$reports") or die "Cannot change to dir $reports: $!\n";
 
-@list = <*.csv.txt>;	# Publishing's Mac insists on adding a .txt to the end
+@list = <*.csv.txt>;    # Publishing's Mac insists on adding a .txt to the end
 foreach $xreport (@list) {
-	# code to check to see which subroutine is needed
 
-	$count++;
-        open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-        $line = <XRPT>;
-        #$digest = md5($line); # RAT - remove
-        $digest = md5_hex($line);
-	chomp($digest);
-        close(XRPT);
-	# reset $line to make sure the MD5sum doesn't get reused
-	$line="";
+    # code to check to see which subroutine is needed
 
-        print "($count) $xreport: DIGEST IS $digest\n";
-	# MD5SUM check
-	if ($digest =~ m/2874c3aa4afb04928c4e4bff4bfcb360/) {
-		&Regular;
-	} elsif ($digest =~ m/5d6e3bd8b82a1b28a558ff9914f29c22/) {
-		&yetAnother;
-	} elsif ($digest =~ m/6f53b3213bd3a36a27413b74e37a5e68/) {
-		&Qube;
-	} elsif ($digest =~ m/6f9b6f013a56e15a86c6af82113d5d72/) {
-		&NoFax;
-	} elsif ($digest =~ m/f76f0325de4d0abbbbd2dc920f3c8ebe/) {
-		&Color;
-	} elsif ($digest =~ m/900c3becc0f7fb3521f1c6797074d1b6/) {
-		&newQube;
-	} elsif ($digest =~ m/ff5a5b8bd17a9182be7862b5bffc9a7b/) {
-		&ColorQube;
-	} elsif ($digest =~ m/f312c9fc5a67f2ef88b9f77d00e1399d/) {
-		&WC3655;
-	} elsif ($digest =~ m/d74586bd1f4e3ea90bf32b0c9710abac/) {
-		&WC7830;
-	} elsif ($digest =~ m/2c0d844465fd1fe6a236a60751f5d408/) {
-		&NoFax;
-	} elsif ($digest =~ m/beccbb8df37ad03ce7d17ee9a4ad92b5/) {
-		&WC5945;
-	} elsif ($digest =~ m/805b6acc03d4cc9cebddcc0a72970624/) {
-		&WC7125;
-	} elsif ($digest =~ m/7a58a2c77a8359ab0e68e3b1da388c51/) {
-		&WC5955;
-	} elsif ($digest =~ m/0163f09f7dbe1f58c62c8f420e4708c5/) {
-		&WC7830;
-	} else {
-		++$rejected;
-		print ERR "**WARNING: $xreport appears to be a new report type and was not processed. ($count)\n";
-		print "**WARNING: $xreport appears to be a new report type and was not processed. ($count)\n";
-	}
+    $count++;
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    $line = <XRPT>;
+
+    #$digest = md5($line); # RAT - remove
+    $digest = md5_hex($line);
+    chomp($digest);
+    close(XRPT);
+
+    # reset $line to make sure the MD5sum doesn't get reused
+    $line = "";
+
+    print "($count) $xreport: DIGEST IS $digest\n";
+
+    # MD5SUM check
+    if ( $digest =~ m/2874c3aa4afb04928c4e4bff4bfcb360/ ) {
+        &Regular;
+    }
+    elsif ( $digest =~ m/5d6e3bd8b82a1b28a558ff9914f29c22/ ) {
+        &yetAnother;
+    }
+    elsif ( $digest =~ m/6f53b3213bd3a36a27413b74e37a5e68/ ) {
+        &Qube;
+    }
+    elsif ( $digest =~ m/6f9b6f013a56e15a86c6af82113d5d72/ ) {
+        &NoFax;
+    }
+    elsif ( $digest =~ m/f76f0325de4d0abbbbd2dc920f3c8ebe/ ) {
+        &Color;
+    }
+    elsif ( $digest =~ m/900c3becc0f7fb3521f1c6797074d1b6/ ) {
+        &newQube;
+    }
+    elsif ( $digest =~ m/ff5a5b8bd17a9182be7862b5bffc9a7b/ ) {
+        &ColorQube;
+    }
+    elsif ( $digest =~ m/f312c9fc5a67f2ef88b9f77d00e1399d/ ) {
+        &WC3655;
+    }
+    elsif ( $digest =~ m/d74586bd1f4e3ea90bf32b0c9710abac/ ) {
+        &WC7830;
+    }
+    elsif ( $digest =~ m/2c0d844465fd1fe6a236a60751f5d408/ ) {
+        &NoFax;
+    }
+    elsif ( $digest =~ m/beccbb8df37ad03ce7d17ee9a4ad92b5/ ) {
+        &WC5945;
+    }
+    elsif ( $digest =~ m/805b6acc03d4cc9cebddcc0a72970624/ ) {
+        &WC7125;
+    }
+    elsif ( $digest =~ m/7a58a2c77a8359ab0e68e3b1da388c51/ ) {
+        &WC5955;
+    }
+    elsif ( $digest =~ m/0163f09f7dbe1f58c62c8f420e4708c5/ ) {
+        &WC7830;
+    }
+    else {
+        ++$rejected;
+        print ERR
+"**WARNING: $xreport appears to be a new report type and was not processed. ($count)\n";
+        print
+"**WARNING: $xreport appears to be a new report type and was not processed. ($count)\n";
+    }
 }
 
 print "-------------------------------------------\n";
 print "Processed $lnproc lines of data from $count files.\n";
 $count = $count - $rejected;
-print "Processed $count *.csv.txt files from the $file_count files in $reports.\n[NO OTHER FILES WERE PROCESSED]\n";
+print
+"Processed $count *.csv.txt files from the $file_count files in $reports.\n[NO OTHER FILES WERE PROCESSED]\n";
 print "Output combined into report myxrxrpt.csv.\n";
 print "Error published in $err.\n";
 &PrintSubRoutinesUsed;
 print "Types of copiers report in $log.\n";
 close(OUT);
 close(LOG);
-	
+
 #=================[Subroutines and Notes]======================#
 sub WC5955() {
-	++$WC5955_no;
-        print "($count) Processing a WC5955 report: $xreport\n";
-        open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-        while(<XRPT>){
+    ++$WC5955_no;
+    print "($count) Processing a WC5955 report: $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
         $lnproc++;
-	#ae0d99d04aed13c7a9c07987299b9db9 - on Mac
-	#Account Name,Account ID,Account Type,Counter: Total Black Copy and Print Impressions,Limit: Black Copy Limit,Limit: Black Copy Used,Limit: Black Copy Remaining,Counter: Total Black Copy Impressions,Sub-Counter: Black Large Copy Impressions,Limit: Black Print Limit,Limit: Black Print Used,Limit: Black Print Remaining,Counter: Total Black Print Impressions,Sub-Counter: Black Large Print Impressions,Last Reset,Machine Serial Number,Report Date,Report Time
-	#7a58a2c77a8359ab0e68e3b1da388c51 - on Linux
-	#Account Name,Account ID,Account Type,Counter: Total Black Copy and Print Impressions,Limit: Black Copy Limit,Limit: Black Copy Used,Limit: Black Copy Remaining,Counter: Total Black Copy Impressions,Sub-Counter: Black Large Copy Impressions,Limit: Black Print Limit,Limit: Black Print Used,Limit: Black Print Remaining,Counter: Total Black Print Impressions,Sub-Counter: Black Large Print Impressions,Last Reset,Machine Serial Number,Report Date,Report Time
-        ($Name,$ID,$AccountType,$BWCopyUsage,$BCLimit,$BCLimitUsed,$LimitBCRemain,$BCImp,$BCLargeImp,$LimitBP,$LimitBPused,$LimitBPremain,$BWPrintUsage,$SubBPLargeImp,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTime) = split(/,/);
-        # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-        }
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-        }
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-                #print "$ID\t";
-        } elsif ($length > 5) {
-                print ERR "WC5955/$xreport: ID $ID not used. Code > 5 digits.\n";
-        }
-        $billcode = ($hashcodes{$ID});
 
-        $ColorCopyUsage = 0;                   #Not used on this device
+#ae0d99d04aed13c7a9c07987299b9db9 - on Mac
+#Account Name,Account ID,Account Type,Counter: Total Black Copy and Print Impressions,Limit: Black Copy Limit,Limit: Black Copy Used,Limit: Black Copy Remaining,Counter: Total Black Copy Impressions,Sub-Counter: Black Large Copy Impressions,Limit: Black Print Limit,Limit: Black Print Used,Limit: Black Print Remaining,Counter: Total Black Print Impressions,Sub-Counter: Black Large Print Impressions,Last Reset,Machine Serial Number,Report Date,Report Time
+#7a58a2c77a8359ab0e68e3b1da388c51 - on Linux
+#Account Name,Account ID,Account Type,Counter: Total Black Copy and Print Impressions,Limit: Black Copy Limit,Limit: Black Copy Used,Limit: Black Copy Remaining,Counter: Total Black Copy Impressions,Sub-Counter: Black Large Copy Impressions,Limit: Black Print Limit,Limit: Black Print Used,Limit: Black Print Remaining,Counter: Total Black Print Impressions,Sub-Counter: Black Large Print Impressions,Last Reset,Machine Serial Number,Report Date,Report Time
+        (
+            $Name,                $ID,            $AccountType,
+            $BWCopyUsage,         $BCLimit,       $BCLimitUsed,
+            $LimitBCRemain,       $BCImp,         $BCLargeImp,
+            $LimitBP,             $LimitBPused,   $LimitBPremain,
+            $BWPrintUsage,        $SubBPLargeImp, $LastReset,
+            $MachineSerialNumber, $ReportDate,    $ReportTime
+        ) = split(/,/);
+
+    # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+
+            #print "$ID\t";
+        }
+        elsif ( $length > 5 ) {
+            print ERR "WC5955/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} );
+
+        $ColorCopyUsage = 0;    #Not used on this device
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-		# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        unless ( $zeros < 1 ) {
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
         }
-        }
-        close(XRPT);
+    }
+    close(XRPT);
 }
 
 sub WC7125() {
-	++$WC7125_no;
-        print "($count) Processing a WC7125 report: $xreport\n";
-        open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-        while(<XRPT>){
+    ++$WC7125_no;
+    print "($count) Processing a WC7125 report: $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
         $lnproc++;
-	next unless /^Name/;
-        #805b6acc03d4cc9cebddcc0a72970624
-        #Serial Number,XDC388144
-        #Report Date,09/01/2015
-        #Report Time,09:00:43
-        #
-        #Name,ID,Account Type,Color Print Limit,Color Print Usage,Color Print Remaining,Black & White Print Limit,Black & White Print Usage,Black & White Print Remaining,Color Copy Limit,Color Copy Usage,Color Copy Remaining,Black & White Copy Limit,Black & White Copy Usage,Black & White Copy Remaining,Color Scan Limit,Color Scan Usage,Color Scan Remaining,Black & White Scan Limit,Black & White Scan Usage,Black & White Scan Remaining,Fax Limit,Fax Usage,Fax Remaining,Internet Fax Limit,Internet Fax Usage,Internet Fax Remaining,Last Reset
-        ($Name,$ID,$AccountType,$CPLimit,$ColorPrintUsage,$CPRemain,$LimitBP,$BWPrintUsage,$Bpremain,$CCLimit,$ColorCopyUsage,$Ccremain,$BCLimit,$BWCopyUsage,$Bcremain,$ColorScanLimit,$ColorScanUsed,$ColorScanRemain,$BwscanLimit,$BwscanUse,$BwscanRemain,$FaxLimit,$FaxUse,$FaxRemain,$IntFaxLimit,$IntFaxUse,$IntFaxRemain,$LastRest) = split(/,/);
-        # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
+        next unless /^Name/;
+
+#805b6acc03d4cc9cebddcc0a72970624
+#Serial Number,XDC388144
+#Report Date,09/01/2015
+#Report Time,09:00:43
+#
+#Name,ID,Account Type,Color Print Limit,Color Print Usage,Color Print Remaining,Black & White Print Limit,Black & White Print Usage,Black & White Print Remaining,Color Copy Limit,Color Copy Usage,Color Copy Remaining,Black & White Copy Limit,Black & White Copy Usage,Black & White Copy Remaining,Color Scan Limit,Color Scan Usage,Color Scan Remaining,Black & White Scan Limit,Black & White Scan Usage,Black & White Scan Remaining,Fax Limit,Fax Usage,Fax Remaining,Internet Fax Limit,Internet Fax Usage,Internet Fax Remaining,Last Reset
+        (
+            $Name,           $ID,              $AccountType,
+            $CPLimit,        $ColorPrintUsage, $CPRemain,
+            $LimitBP,        $BWPrintUsage,    $Bpremain,
+            $CCLimit,        $ColorCopyUsage,  $Ccremain,
+            $BCLimit,        $BWCopyUsage,     $Bcremain,
+            $ColorScanLimit, $ColorScanUsed,   $ColorScanRemain,
+            $BwscanLimit,    $BwscanUse,       $BwscanRemain,
+            $FaxLimit,       $FaxUse,          $FaxRemain,
+            $IntFaxLimit,    $IntFaxUse,       $IntFaxRemain,
+            $LastRest
+        ) = split(/,/);
+
+    # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
         $length = length($ID);
         if ( $length < 5 ) {
-                $ID = "0" . $ID;
+            $ID = "0" . $ID;
         }
         $length = length($ID);
         if ( $length < 5 ) {
-                $ID = "0" . $ID;
+            $ID = "0" . $ID;
         }
         $length = length($ID);
         if ( $length < 5 ) {
-                $ID = "0" . $ID;
-                #print "$ID\t";
-        } elsif ($length > 5) {
-                print ERR "WC7125/$xreport: ID $ID not used. Code > 5 digits.\n";
+            $ID = "0" . $ID;
+
+            #print "$ID\t";
         }
-        $billcode = ($hashcodes{$ID});
+        elsif ( $length > 5 ) {
+            print ERR "WC7125/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} );
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
-        }
-        }
-        close(XRPT);
-}
+        unless ( $zeros < 1 ) {
 
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        }
+    }
+    close(XRPT);
+}
 
 sub WC5945() {
-	++$WC5945_no;
-        print "($count) Processing a WC5945 report: $xreport\n";
-        open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-        while(<XRPT>){
+    ++$WC5945_no;
+    print "($count) Processing a WC5945 report: $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
         $lnproc++;
-        #beccbb8df37ad03ce7d17ee9a4ad92b5
-        #Account Name,Account ID,Account Type,Counter: Total Black Copy and Print Impressions,Limit: Black Copy Limit,Limit: Black Copy Used,Limit: Black Copy Remaining,Counter: Total Black Copy Impressions,Sub-Counter: Black Large Copy Impressions,Limit: Black Print Limit,Limit: Black Print Used,Limit: Black Print Remaining,Counter: Total Black Print Impressions,Sub-Counter: Black Large Print Impressions,Limit: Network Images Sent Limit,Limit: Network Images Sent Used,Limit: Network Images Sent Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
-        ($Name,$ID,$AccountType,$BWCopyUsage,$BCLimit,$BCLimitUsed,$LimitBCRemain,$BCImp,$BCLargeImp,$LimitBP,$LimitBPused,$LimitBPremain,$BWPrintUsage,$SubBPLargeImp,$LimitNetworkSent,$NetworkImagesSentUsage,$LimitNetworkSentRemain,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTime) = split(/,/);
-        # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-        }
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-        }
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-                #print "$ID\t";
-        } elsif ($length > 5) {
-                print ERR "WC5945/$xreport: ID $ID not used. Code > 5 digits.\n";
-        }
-        $billcode = ($hashcodes{$ID});
 
-        $ColorCopyUsage = 0;                   #Not used on this device
+#beccbb8df37ad03ce7d17ee9a4ad92b5
+#Account Name,Account ID,Account Type,Counter: Total Black Copy and Print Impressions,Limit: Black Copy Limit,Limit: Black Copy Used,Limit: Black Copy Remaining,Counter: Total Black Copy Impressions,Sub-Counter: Black Large Copy Impressions,Limit: Black Print Limit,Limit: Black Print Used,Limit: Black Print Remaining,Counter: Total Black Print Impressions,Sub-Counter: Black Large Print Impressions,Limit: Network Images Sent Limit,Limit: Network Images Sent Used,Limit: Network Images Sent Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
+        (
+            $Name,                   $ID,
+            $AccountType,            $BWCopyUsage,
+            $BCLimit,                $BCLimitUsed,
+            $LimitBCRemain,          $BCImp,
+            $BCLargeImp,             $LimitBP,
+            $LimitBPused,            $LimitBPremain,
+            $BWPrintUsage,           $SubBPLargeImp,
+            $LimitNetworkSent,       $NetworkImagesSentUsage,
+            $LimitNetworkSentRemain, $LastReset,
+            $MachineSerialNumber,    $ReportDate,
+            $ReportTime
+        ) = split(/,/);
+
+    # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+
+            #print "$ID\t";
+        }
+        elsif ( $length > 5 ) {
+            print ERR "WC5945/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} );
+
+        $ColorCopyUsage = 0;    #Not used on this device
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        unless ( $zeros < 1 ) {
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
         }
-        }
-        close(XRPT);
+    }
+    close(XRPT);
 }
 
-
 sub WC7830() {
-	++$WC7830_no;
-        print "($count) Processing a WC7830 report: $xreport\n";
-        open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-        while(<XRPT>){
+    ++$WC7830_no;
+    print "($count) Processing a WC7830 report: $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
         $lnproc++;
+
         #d74586bd1f4e3ea90bf32b0c9710abac
         #A Account Name,
         #B Account ID,
@@ -497,378 +569,554 @@ sub WC7830() {
         #AA Machine Serial Number,
         #BB Report Date,
         #CC Report Time
-        ($Name,$ID,$AccountType,$BWCopyUsage,$ColorPrintUsage,$CCLimit,$CCLimitUsed,$CCLimitRemain,$ColorCopyUsage,$SubCCLargeImp,$BCLimit,$BCLimitUsed,$LimitBCRemain,$BCImp,$BCLargeImp,$CPLimit,$CPLimitUsed,$CPRemain,$TotalCPImp,$SubCPLargeImp,$LimitBP,$LimitBPused,$LimitBPremain,$BWPrintUsage,$SubBPLargeImp,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTime) = split(/,/);
-        # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-        }
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-        }
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-                #print "$ID\t";
-        } elsif ($length > 5) {
-                print ERR "WC7830/$xreport: ID $ID not used. Code > 5 digits.\n";
-        }
-        $billcode = ($hashcodes{$ID});
+        (
+            $Name,          $ID,              $AccountType,
+            $BWCopyUsage,   $ColorPrintUsage, $CCLimit,
+            $CCLimitUsed,   $CCLimitRemain,   $ColorCopyUsage,
+            $SubCCLargeImp, $BCLimit,         $BCLimitUsed,
+            $LimitBCRemain, $BCImp,           $BCLargeImp,
+            $CPLimit,       $CPLimitUsed,     $CPRemain,
+            $TotalCPImp,    $SubCPLargeImp,   $LimitBP,
+            $LimitBPused,   $LimitBPremain,   $BWPrintUsage,
+            $SubBPLargeImp, $LastReset,       $MachineSerialNumber,
+            $ReportDate,    $ReportTime
+        ) = split(/,/);
 
-        $NetworkImagesSentUsage = 0;            #Not used on this device
-        $EfaxReceiveUsage = 0;                  #Not used on this device
+    # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+
+            #print "$ID\t";
+        }
+        elsif ( $length > 5 ) {
+            print ERR "WC7830/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} );
+
+        $NetworkImagesSentUsage = 0;    #Not used on this device
+        $EfaxReceiveUsage       = 0;    #Not used on this device
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        unless ( $zeros < 1 ) {
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
         }
-        }
-        close(XRPT);
+    }
+    close(XRPT);
 }
 
 sub WC3655() {
-	++$WC3655_no;
-        print "($count) Processing a WC3655 report: $xreport\n";
-        open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-        while(<XRPT>){
+    ++$WC3655_no;
+    print "($count) Processing a WC3655 report: $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
         $lnproc++;
+
 #      DIGEST IS f312c9fc5a67f2ef88b9f77d00e1399d
 #**WARNING: XSAreportWC3655Sep12015.csv appears to be a new report type and was not processed.
 #Account Name,Account ID,Account Type,Counter: Total Black Copy and Print Impressions,Limit: Black Copy Limit,Limit: Black Copy Used,Limit: Black Copy Remaining,Counter: Total Black Copy Impressions,Limit: Black Print Limit,Limit: Black Print Used,Limit: Black Print Remaining,Counter: Total Black Print Impressions,Last Reset,Machine Serial Number,Report Date,Report Time
 
-        ($Name,$ID,$AccountType,$BWCopyUsage,$LimitBC,$LimitBCused,$LimitBCremain,$CounteBCImp,$LimitBP,$LimitBPused,$LimitBPremain,$CounterBPimp,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTime) = split(/,/);
+        (
+            $Name,          $ID,                  $AccountType,
+            $BWCopyUsage,   $LimitBC,             $LimitBCused,
+            $LimitBCremain, $CounteBCImp,         $LimitBP,
+            $LimitBPused,   $LimitBPremain,       $CounterBPimp,
+            $LastReset,     $MachineSerialNumber, $ReportDate,
+            $ReportTime
+        ) = split(/,/);
 
-        # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
+    # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
         $length = length($ID);
         if ( $length < 5 ) {
-                $ID = "0" . $ID;
+            $ID = "0" . $ID;
         }
         $length = length($ID);
         if ( $length < 5 ) {
-                $ID = "0" . $ID;
+            $ID = "0" . $ID;
         }
         $length = length($ID);
         if ( $length < 5 ) {
-                $ID = "0" . $ID;
-                #print "$ID\t";
-        } elsif ($length > 5) {
-                print ERR "WC3655/$xreport: ID $ID not used. Code > 5 digits.\n";
+            $ID = "0" . $ID;
+
+            #print "$ID\t";
         }
-        $billcode = ($hashcodes{$ID});
+        elsif ( $length > 5 ) {
+            print ERR "WC3655/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} );
 
         # my best guess as to these values
-	# No color - black & white only
-	# No fax
-        $ColorCopyUsage = 0;                   #Not used on this device
+        # No color - black & white only
+        # No fax
+        $ColorCopyUsage = 0;    #Not used on this device
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        unless ( $zeros < 1 ) {
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
         }
-        }
-        close(XRPT);
+    }
+    close(XRPT);
 }
 
 sub ColorQube() {
-	++$ColorQube_no;
-        print "($count) Processing a ColorQube report (no fax): $xreport\n";
-        open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-        while(<XRPT>){
+    ++$ColorQube_no;
+    print "($count) Processing a ColorQube report (no fax): $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
         $lnproc++;
-        #ff5a5b8bd17a9182be7862b5bffc9a7b
+
+#ff5a5b8bd17a9182be7862b5bffc9a7b
 #Account Name,Account ID,Account Type,Counter: Total Black + Level 1 Copy and Print
 #Impressions,Counter: Total Color Level 2 Copy and Print Impressions,Counter: Total Color
 #Level 3 Copy and Print Impressions,Limit: Color Copy Limit (Levels 2 + 3),Limit: Color
 #Copy Used (Levels 2 + 3),Limit: Color Copy Remaining (Levels 2 + 3),Counter: Color Level
 #1 Copy Impressions,Counter: Color Level 2 Copy Impressions,Counter: Color Level 3 Copy
-#Impressions,Counter: Total Color Copy Impressions (Levels 1 + 2 + 3),Sub-Counter: Color 
+#Impressions,Counter: Total Color Copy Impressions (Levels 1 + 2 + 3),Sub-Counter: Color
 #Large Copy Impressions,Limit: Black + Level 1 Copy Limit,Limit: Black + Level 1 Copy
 #Used,Limit: Black + Level 1 Copy Remaining,Sub-Counter: Black Copy Impressions,Sub
 #Counter: Black Large Copy Impressions,Limit: Color Print Limit (Levels 2 + 3),Limit:
-#Color Print Used (Levels 2 + 3),Limit: Color Print Remaining (Levels 2 + 3),Counter: 
+#Color Print Used (Levels 2 + 3),Limit: Color Print Remaining (Levels 2 + 3),Counter:
 #Color Level 1 Print Impressions,Counter: Color Level 2 Print Impressions,Counter: Color
 #Level 3 Print Impressions,Counter: Total Color Print Impressions (Levels 1 + 2 + 3),Sub
 #Counter: Color Large Print Impressions,Limit: Black + Level 1 Print Limit,Limit: Black +
 #Level 1 Print Used,Limit: Black + Level 1 Print Remaining,Sub-Counter: Black Print
 #Impressions,Sub-Counter: Black Large Print Impressions,Last Reset,Machine Serial
 #Number,Report Date,Report Time
-       
-        ($Name,$ID,$AccountType,$BWCopyUsage,$CounterL2,$CounterL3,$CCLimit,$CCLimitUsed,$CCLimitRemaining,$CCLevel1,$CCLevel2,$CCLevel3,$TotalCC,$SubCountColorLarge,$BlackCopyLimit,$BlackCopyLimitUsed,$BlackCopyLimitRemaining,$SubCountBlackCopy,$SubCountBlackLarge,$ColorPrintLimit,$ColorPrintUsage,$ColorPrintRemaining,$CPLevel1,$CPLevel2,$CPLevel3,$CPTotal,$SubCountColorLargePrint,$BlackPrintL1,$BlackPrintL1Used,$BlackPrintL1Remaining,$SubCountBlackPrint,$SubCountBlackPrintLarge,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTime) = split(/,/);
 
-        # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-        }
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-        }
-        $length = length($ID);
-        if ( $length < 5 ) {
-                $ID = "0" . $ID;
-                #print "$ID\t";
-        } elsif ($length > 5) {
-                print ERR "ColorQube/$xreport: ID $ID not used. Code > 5 digits.\n";
-        }
-        $billcode = ($hashcodes{$ID});
+        (
+            $Name,                    $ID,
+            $AccountType,             $BWCopyUsage,
+            $CounterL2,               $CounterL3,
+            $CCLimit,                 $CCLimitUsed,
+            $CCLimitRemaining,        $CCLevel1,
+            $CCLevel2,                $CCLevel3,
+            $TotalCC,                 $SubCountColorLarge,
+            $BlackCopyLimit,          $BlackCopyLimitUsed,
+            $BlackCopyLimitRemaining, $SubCountBlackCopy,
+            $SubCountBlackLarge,      $ColorPrintLimit,
+            $ColorPrintUsage,         $ColorPrintRemaining,
+            $CPLevel1,                $CPLevel2,
+            $CPLevel3,                $CPTotal,
+            $SubCountColorLargePrint, $BlackPrintL1,
+            $BlackPrintL1Used,        $BlackPrintL1Remaining,
+            $SubCountBlackPrint,      $SubCountBlackPrintLarge,
+            $LastReset,               $MachineSerialNumber,
+            $ReportDate,              $ReportTime
+        ) = split(/,/);
 
-	# This field is calculated thusly (I am told)
-	$ColorCopyUsage = $CounterL2 + $CounterL3;
+    # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+
+            #print "$ID\t";
+        }
+        elsif ( $length > 5 ) {
+            print ERR "ColorQube/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} );
+
+        # This field is calculated thusly (I am told)
+        $ColorCopyUsage = $CounterL2 + $CounterL3;
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        unless ( $zeros < 1 ) {
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
         }
-        }
-        close(XRPT);
+    }
+    close(XRPT);
 }
 
 sub newQube() {
-	++$newQube_no;
-	print "($count) Processing a newQube report: $xreport\n";
-	open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-	while(<XRPT>){
-	$lnproc++;
-	#900c3becc0f7fb3521f1c6797074d1b6
-	#Account Name,Account ID,Account Type,Counter: Total Black + Level 1 Copy and Print Impressions,Counter: Total Color Level 2 Copy and Print Impressions,Counter: Total Color Level 3 Copy and Print Impressions,Limit: Color Copy Limit (Levels 2 + 3),Limit: Color Copy Used (Levels 2 + 3),Limit: Color Copy Remaining (Levels 2 + 3),Counter: Color Level 1 Copy Impressions,Counter: Color Level 2 Copy Impressions,Counter: Color Level 3 Copy Impressions,Counter: Total Color Copy Impressions (Levels 1 + 2 + 3),Sub-Counter: Color Large Copy Impressions,Limit: Black + Level 1 Copy Limit,Limit: Black + Level 1 Copy Used,Limit: Black + Level 1 Copy Remaining,Sub-Counter: Black Copy Impressions,Sub-Counter: Black Large Copy Impressions,Limit: Color Print Limit (Levels 2 + 3),Limit: Color Print Used (Levels 2 + 3),Limit: Color Print Remaining (Levels 2 + 3),Counter: Color Level 1 Print Impressions,Counter: Color Level 2 Print Impressions,Counter: Color Level 3 Print Impressions,Counter: Total Color Print Impressions (Levels 1 + 2 + 3),Sub-Counter: Color Large Print Impressions,Limit: Black + Level 1 Print Limit,Limit: Black + Level 1 Print Used,Limit: Black + Level 1 Print Remaining,Sub-Counter: Black Print Impressions,Sub-Counter: Black Large Print Impressions,Limit: Network Images Sent Limit,Limit: Network Images Sent Used,Limit: Network Images Sent Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
-	($Name,$ID,$AccountType,$BkPlusL1CpAndPr,$TotL2CpAndPr,$TotL3CpAndPr,$LimL2PlusL3,$L2PlusL3,$RemL2PlusL3,$CpL1,$CpL2,$CpL3,$ColorCopyUsage,$LgClCp,$LimCpBkPlusL1,$CpBkPlusL1,$RemCpBkPlusL1,$BWCopyUsage,$LgBkCp,$PrLimL2PlusL3,$PrL2PlusL3,$PrRemL2PlusL3,$PrL1,$PrL2,$PrL3,$ColorPrintUsage,$LgClPr,$LimBlPlusL1Pr,$PrBlPlusL1,$RemBlPlusL1Pr,$BWPrintUsage,$LgBlPr,$LimNtwkImgSent,$NetworkImagesSentUsage,$RemNtwkImgSent,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTime) = split(/,/);
-	$EfaxReceiveUsage="0";
-	# This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
-	$length = length($ID);
-	if ( $length < 5 ) {
-               	$ID = "0" . $ID;
-	}
-	$length = length($ID);
-	if ( $length < 5 ) {
-               	$ID = "0" . $ID;
-	}
-	$length = length($ID);
-	if ( $length < 5 ) {
-               	$ID = "0" . $ID;
-		#print "$ID\t";
-        } elsif ($length > 5) {
-		print ERR "Qube/$xreport: ID $ID not used. Code > 5 digits.\n";
-	}
-	$billcode = ($hashcodes{$ID});
+    ++$newQube_no;
+    print "($count) Processing a newQube report: $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
+        $lnproc++;
+
+#900c3becc0f7fb3521f1c6797074d1b6
+#Account Name,Account ID,Account Type,Counter: Total Black + Level 1 Copy and Print Impressions,Counter: Total Color Level 2 Copy and Print Impressions,Counter: Total Color Level 3 Copy and Print Impressions,Limit: Color Copy Limit (Levels 2 + 3),Limit: Color Copy Used (Levels 2 + 3),Limit: Color Copy Remaining (Levels 2 + 3),Counter: Color Level 1 Copy Impressions,Counter: Color Level 2 Copy Impressions,Counter: Color Level 3 Copy Impressions,Counter: Total Color Copy Impressions (Levels 1 + 2 + 3),Sub-Counter: Color Large Copy Impressions,Limit: Black + Level 1 Copy Limit,Limit: Black + Level 1 Copy Used,Limit: Black + Level 1 Copy Remaining,Sub-Counter: Black Copy Impressions,Sub-Counter: Black Large Copy Impressions,Limit: Color Print Limit (Levels 2 + 3),Limit: Color Print Used (Levels 2 + 3),Limit: Color Print Remaining (Levels 2 + 3),Counter: Color Level 1 Print Impressions,Counter: Color Level 2 Print Impressions,Counter: Color Level 3 Print Impressions,Counter: Total Color Print Impressions (Levels 1 + 2 + 3),Sub-Counter: Color Large Print Impressions,Limit: Black + Level 1 Print Limit,Limit: Black + Level 1 Print Used,Limit: Black + Level 1 Print Remaining,Sub-Counter: Black Print Impressions,Sub-Counter: Black Large Print Impressions,Limit: Network Images Sent Limit,Limit: Network Images Sent Used,Limit: Network Images Sent Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
+        (
+            $Name,                $ID,
+            $AccountType,         $BkPlusL1CpAndPr,
+            $TotL2CpAndPr,        $TotL3CpAndPr,
+            $LimL2PlusL3,         $L2PlusL3,
+            $RemL2PlusL3,         $CpL1,
+            $CpL2,                $CpL3,
+            $ColorCopyUsage,      $LgClCp,
+            $LimCpBkPlusL1,       $CpBkPlusL1,
+            $RemCpBkPlusL1,       $BWCopyUsage,
+            $LgBkCp,              $PrLimL2PlusL3,
+            $PrL2PlusL3,          $PrRemL2PlusL3,
+            $PrL1,                $PrL2,
+            $PrL3,                $ColorPrintUsage,
+            $LgClPr,              $LimBlPlusL1Pr,
+            $PrBlPlusL1,          $RemBlPlusL1Pr,
+            $BWPrintUsage,        $LgBlPr,
+            $LimNtwkImgSent,      $NetworkImagesSentUsage,
+            $RemNtwkImgSent,      $LastReset,
+            $MachineSerialNumber, $ReportDate,
+            $ReportTime
+        ) = split(/,/);
+        $EfaxReceiveUsage = "0";
+
+    # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+
+            #print "$ID\t";
+        }
+        elsif ( $length > 5 ) {
+            print ERR "Qube/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} );
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
-	}
-	}
-	close(XRPT);
+        unless ( $zeros < 1 ) {
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        }
+    }
+    close(XRPT);
 }
 
 sub Qube() {
-	++$Qube_no;
-	print "($count) Processing a Qube report: $xreport\n";
-	open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-	while(<XRPT>){
-	$lnproc++;
-	#6f53b3213bd3a36a27413b74e37a5e68
-	#Name,ID,Account Type,Color Copy Limit,Color Copy Usage,Color Copy Remaining,BW Copy Limit,BW Copy Usage,BW Copy Remaining,Color Print Limit,Color Print Usage,Color Print Remaining,BW Print Limit,BW Print Usage,BW Print Remaining,Network Images Sent Limit,Network Images Sent Usage,Network Image Sent Remaining,EFax Limit,EFax Usage,Efax Remaining,Efax Receive Limit,Efax Receive Usage,EFax Receive Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
-	($Name,$ID,$AccountType,$ColorCopyLimit,$ColorCopyUsage,$ColorCopyRemaining,$BWCopyLimit,$BWCopyUsage,$BWCopyRemaining,$ColorPrintLimit,$ColorPrintUsage,$ColorPrintRemaining,$BWPrintLimit,$BWPrintUsage,$BWPrintRemaining,$NetworkImagesSentLimit,$NetworkImagesSentUsage,$NetworkImageSentRemaining,$EFaxLimit,$EFaxUsage,$EfaxRemaining,$EfaxReceiveLimit,$EfaxReceiveUsage,$EFaxReceiveRemaining,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTimeCustomerServiceEngineerAccount) = split(/,/);
-	# This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
-	$length = length($ID);
-	if ( $length < 5 ) {
-               	$ID = "0" . $ID;
-	}
-	$length = length($ID);
-	if ( $length < 5 ) {
-               	$ID = "0" . $ID;
-	}
-	$length = length($ID);
-	if ( $length < 5 ) {
-               	$ID = "0" . $ID;
-		#print "$ID\t";
-        } elsif ($length > 5) {
-		print ERR "Qube/$xreport: ID $ID not used. Code > 5 digits.\n";
-	}
-	$billcode = ($hashcodes{$ID});
+    ++$Qube_no;
+    print "($count) Processing a Qube report: $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
+        $lnproc++;
+
+#6f53b3213bd3a36a27413b74e37a5e68
+#Name,ID,Account Type,Color Copy Limit,Color Copy Usage,Color Copy Remaining,BW Copy Limit,BW Copy Usage,BW Copy Remaining,Color Print Limit,Color Print Usage,Color Print Remaining,BW Print Limit,BW Print Usage,BW Print Remaining,Network Images Sent Limit,Network Images Sent Usage,Network Image Sent Remaining,EFax Limit,EFax Usage,Efax Remaining,Efax Receive Limit,Efax Receive Usage,EFax Receive Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
+        (
+            $Name,
+            $ID,
+            $AccountType,
+            $ColorCopyLimit,
+            $ColorCopyUsage,
+            $ColorCopyRemaining,
+            $BWCopyLimit,
+            $BWCopyUsage,
+            $BWCopyRemaining,
+            $ColorPrintLimit,
+            $ColorPrintUsage,
+            $ColorPrintRemaining,
+            $BWPrintLimit,
+            $BWPrintUsage,
+            $BWPrintRemaining,
+            $NetworkImagesSentLimit,
+            $NetworkImagesSentUsage,
+            $NetworkImageSentRemaining,
+            $EFaxLimit,
+            $EFaxUsage,
+            $EfaxRemaining,
+            $EfaxReceiveLimit,
+            $EfaxReceiveUsage,
+            $EFaxReceiveRemaining,
+            $LastReset,
+            $MachineSerialNumber,
+            $ReportDate,
+            $ReportTimeCustomerServiceEngineerAccount
+        ) = split(/,/);
+
+    # This report has a lot of non-zero-padded codes. Codes need to be 5 digits.
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+
+            #print "$ID\t";
+        }
+        elsif ( $length > 5 ) {
+            print ERR "Qube/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} );
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
-	}
-	}
-	close(XRPT);
+        unless ( $zeros < 1 ) {
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        }
+    }
+    close(XRPT);
 }
 
 sub Color() {
-	++$Color_no;
-	print "($count) Processing a color (non-fax) report: $xreport\n";
-	open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-	while(<XRPT>){
-	$lnproc++;
-	#f76f0325de4d0abbbbd2dc920f3c8ebe
-	#Name,ID,Account Type,Color Copy Limit,Color Copy Usage,Color Copy Remaining,BW Copy Limit,BW Copy Usage,BW Copy Remaining,Color Print Limit,Color Print Usage,Color Print Remaining,BW Print Limit,BW Print Usage,BW Print Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
-	($Name,$ID,$AccountType,$ColorCopyLimit,$ColorCopyUsage,$ColorCopyRemaining,$BWCopyLimit,$BWCopyUsage,$BWCopyRemaining,$ColorPrintLimit,$ColorPrintUsage,$ColorPrintRemaining,$BWPrintLimit,$BWPrintUsage,$BWPrintRemaining,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTime) = split(/,/);
-	$length = length($ID);
-	if ( $length < 5 ) {
-               	$ID = "0" . $ID;
-        } elsif ($length > 5) {
-		print ERR "ColorNF/$xreport: ID $ID not used. Code > 5 digits.\n";
-	}
-	$billcode = ($hashcodes{$ID}) or warn "$ID err: $!\n";
+    ++$Color_no;
+    print "($count) Processing a color (non-fax) report: $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
+        $lnproc++;
+
+#f76f0325de4d0abbbbd2dc920f3c8ebe
+#Name,ID,Account Type,Color Copy Limit,Color Copy Usage,Color Copy Remaining,BW Copy Limit,BW Copy Usage,BW Copy Remaining,Color Print Limit,Color Print Usage,Color Print Remaining,BW Print Limit,BW Print Usage,BW Print Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
+        (
+            $Name,            $ID,                  $AccountType,
+            $ColorCopyLimit,  $ColorCopyUsage,      $ColorCopyRemaining,
+            $BWCopyLimit,     $BWCopyUsage,         $BWCopyRemaining,
+            $ColorPrintLimit, $ColorPrintUsage,     $ColorPrintRemaining,
+            $BWPrintLimit,    $BWPrintUsage,        $BWPrintRemaining,
+            $LastReset,       $MachineSerialNumber, $ReportDate,
+            $ReportTime
+        ) = split(/,/);
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        elsif ( $length > 5 ) {
+            print ERR "ColorNF/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} ) or warn "$ID err: $!\n";
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
-	}
-	}
-	close(XRPT);
+        unless ( $zeros < 1 ) {
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        }
+    }
+    close(XRPT);
 }
 
 sub yetAnother() {
-	# 7525
-	++$yetAnother_no;
-	print "($count) Processing a yet another color report: $xreport\n";
-	open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-	while(<XRPT>){
-	$lnproc++;
-	#5d6e3bd8b82a1b28a558ff9914f29c22
-	#Name,ID,Account Type,Color Copy Limit,Color Copy Usage,Color Copy Remaining,BW Copy Limit,BW Copy Usage,BW Copy Remaining,Color Print Limit,Color Print Usage,Color Print Remaining,BW Print Limit,BW Print Usage,BW Print Remaining,Network Images Sent Limit,Network Images Sent Usage,Network Image Sent Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
-	($Name,$ID,$AccountType,$ColorCopyLimit,$ColorCopyUsage,$ColorCopyRemaining,$BWCopyLimit,$BWCopyUsage,$BWCopyRemaining,$ColorPrintLimit,$ColorPrintUsage,$ColorPrintRemaining,$BWPrintLimit,$BWPrintUsage,$BWPrintRemaining,$NetworkImagesSentLimit,$NetworkImagesSentUsage,$NetworkImageSentRemaining,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTime) = split(/,/);
-	$length = length($ID);
-	if ( $length < 5 ) {
-               	$ID = "0" . $ID;
-        } elsif ($length > 5) {
-		print ERR "Color/$xreport: ID $ID not used. Code > 5 digits.\n";
-	}
-	$billcode = ($hashcodes{$ID}) or warn "$ID err: $!\n";
+
+    # 7525
+    ++$yetAnother_no;
+    print "($count) Processing a yet another color report: $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
+        $lnproc++;
+
+#5d6e3bd8b82a1b28a558ff9914f29c22
+#Name,ID,Account Type,Color Copy Limit,Color Copy Usage,Color Copy Remaining,BW Copy Limit,BW Copy Usage,BW Copy Remaining,Color Print Limit,Color Print Usage,Color Print Remaining,BW Print Limit,BW Print Usage,BW Print Remaining,Network Images Sent Limit,Network Images Sent Usage,Network Image Sent Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
+        (
+            $Name,                   $ID,
+            $AccountType,            $ColorCopyLimit,
+            $ColorCopyUsage,         $ColorCopyRemaining,
+            $BWCopyLimit,            $BWCopyUsage,
+            $BWCopyRemaining,        $ColorPrintLimit,
+            $ColorPrintUsage,        $ColorPrintRemaining,
+            $BWPrintLimit,           $BWPrintUsage,
+            $BWPrintRemaining,       $NetworkImagesSentLimit,
+            $NetworkImagesSentUsage, $NetworkImageSentRemaining,
+            $LastReset,              $MachineSerialNumber,
+            $ReportDate,             $ReportTime
+        ) = split(/,/);
+        $length = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        elsif ( $length > 5 ) {
+            print ERR "Color/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} ) or warn "$ID err: $!\n";
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
-	}
-	}
-	close(XRPT);
+        unless ( $zeros < 1 ) {
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        }
+    }
+    close(XRPT);
 }
 
 sub Regular() {
-	++$Regular_no;
-	print "($count)Processing a regular report: $xreport\n";
-	open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-	while(<XRPT>){
-	$lnproc++;
-	#2874c3aa4afb04928c4e4bff4bfcb360
-	#Name,ID,Account Type,BW Copy Limit,BW Copy Usage,BW Copy Remaining,BW Print Limit,BW Print Usage,BW Print Remaining,Network Images Sent Limit,Network Images Sent Usage,Network Image Sent Remaining,EFax Limit,EFax Usage,Efax Remaining,Efax Receive Limit,Efax Receive Usage,EFax Receive Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
-	($Name,$ID,$AccountType,$BWCopyLimit,$BWCopyUsage,$BWCopyRemaining,$BWPrintLimit,$BWPrintUsage,$BWPrintRemaining,$NetworkImagesSentLimit,$NetworkImagesSentUsage,$NetworkImageSentRemaining,$EFaxLimit,$EFaxUsage,$EfaxRemaining,$EfaxReceiveLimit,$EfaxReceiveUsage,$EFaxReceiveRemaining,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTime) = split(/,/);
-	$ColorCopyUsage="0";	# Doesn't exist on this system
-	$ColorPrintUsage="0";	# Would've set to NA but need 
-        $NetworkImagesSentUsage="0";   # check for zero later.
-        $EfaxReceiveUsage="0";  
-	$length = length($ID);
-	if ( $length < 5 ) {
-               	$ID = "0" . $ID;
-        } elsif ($length > 5) {
-		print ERR "Regular/$xreport: ID $ID not used. Code > 5 digits.\n";
-	}
-	$billcode = ($hashcodes{$ID});
+    ++$Regular_no;
+    print "($count)Processing a regular report: $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
+        $lnproc++;
+
+#2874c3aa4afb04928c4e4bff4bfcb360
+#Name,ID,Account Type,BW Copy Limit,BW Copy Usage,BW Copy Remaining,BW Print Limit,BW Print Usage,BW Print Remaining,Network Images Sent Limit,Network Images Sent Usage,Network Image Sent Remaining,EFax Limit,EFax Usage,Efax Remaining,Efax Receive Limit,Efax Receive Usage,EFax Receive Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
+        (
+            $Name,                   $ID,
+            $AccountType,            $BWCopyLimit,
+            $BWCopyUsage,            $BWCopyRemaining,
+            $BWPrintLimit,           $BWPrintUsage,
+            $BWPrintRemaining,       $NetworkImagesSentLimit,
+            $NetworkImagesSentUsage, $NetworkImageSentRemaining,
+            $EFaxLimit,              $EFaxUsage,
+            $EfaxRemaining,          $EfaxReceiveLimit,
+            $EfaxReceiveUsage,       $EFaxReceiveRemaining,
+            $LastReset,              $MachineSerialNumber,
+            $ReportDate,             $ReportTime
+        ) = split(/,/);
+        $ColorCopyUsage         = "0";           # Doesn't exist on this system
+        $ColorPrintUsage        = "0";           # Would've set to NA but need
+        $NetworkImagesSentUsage = "0";           # check for zero later.
+        $EfaxReceiveUsage       = "0";
+        $length                 = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        elsif ( $length > 5 ) {
+            print ERR "Regular/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} );
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-		print "$MachineSerialNumber\n";
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
-	}
-	}
-	close(XRPT);
+        unless ( $zeros < 1 ) {
+            print "$MachineSerialNumber\n";
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        }
+    }
+    close(XRPT);
 }
 
 sub NoFax() {
-	# This is the 5735 series printer
-	++$NoFax_no;
-	print "($count) Processing a regular report (no fax,5735): $xreport\n";
-	open(XRPT,"<$xreport") or die "Cannot open $xreport: $!\n";
-	while(<XRPT>){
-	$lnproc++;
-	#6f9b6f013a56e15a86c6af82113d5d72
-	#Name,ID,Account Type,BW Copy Limit,BW Copy Usage,BW Copy Remaining,BW Print Limit,BW Print Usage,BW Print Remaining,Network Images Sent Limit,Network Images Sent Usage,Network Image Sent Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
-	($Name,$ID,$AccountType,$BWCopyLimit,$BWCopyUsage,$BWCopyRemaining,$BWPrintLimit,$BWPrintUsage,$BWPrintRemaining,$NetworkImagesSentLimit,$NetworkImagesSentUsage,$NetworkImageSentRemaining,$LastReset,$MachineSerialNumber,$ReportDate,$ReportTime) = split(/,/);
- 	$ColorCopyUsage="0";		# These do not exist on this system
-	$length = length($ID);
-	if ( $length < 5 ) {
-               	$ID = "0" . $ID;
-        } elsif ($length > 5) {
-		print ERR "5735-RegularNF/$xreport: ID $ID not used. Code > 5 digits.\n";
-	}
-	$billcode = ($hashcodes{$ID});
+
+    # This is the 5735 series printer
+    ++$NoFax_no;
+    print "($count) Processing a regular report (no fax,5735): $xreport\n";
+    open( XRPT, "<$xreport" ) or die "Cannot open $xreport: $!\n";
+    while (<XRPT>) {
+        $lnproc++;
+
+#6f9b6f013a56e15a86c6af82113d5d72
+#Name,ID,Account Type,BW Copy Limit,BW Copy Usage,BW Copy Remaining,BW Print Limit,BW Print Usage,BW Print Remaining,Network Images Sent Limit,Network Images Sent Usage,Network Image Sent Remaining,Last Reset,Machine Serial Number,Report Date,Report Time
+        (
+            $Name,                   $ID,
+            $AccountType,            $BWCopyLimit,
+            $BWCopyUsage,            $BWCopyRemaining,
+            $BWPrintLimit,           $BWPrintUsage,
+            $BWPrintRemaining,       $NetworkImagesSentLimit,
+            $NetworkImagesSentUsage, $NetworkImageSentRemaining,
+            $LastReset,              $MachineSerialNumber,
+            $ReportDate,             $ReportTime
+        ) = split(/,/);
+        $ColorCopyUsage = "0";           # These do not exist on this system
+        $length         = length($ID);
+        if ( $length < 5 ) {
+            $ID = "0" . $ID;
+        }
+        elsif ( $length > 5 ) {
+            print ERR
+              "5735-RegularNF/$xreport: ID $ID not used. Code > 5 digits.\n";
+        }
+        $billcode = ( $hashcodes{$ID} );
 
         unless (m/^Name,/) {
-                &PrintNoZeros;
+            &PrintNoZeros;
         }
-        unless ($zeros<1) {
-                # $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
-                print OUT "$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
-	}
-	}
-	close(XRPT);
+        unless ( $zeros < 1 ) {
+
+# $header = "Name,Banner-Org,BW Copy Usage,Color Copy Usage,Machine Serial Number\n";
+            print OUT
+"$Name,$billcode,$BWCopyUsage,$ColorCopyUsage,$MachineSerialNumber\n";
+        }
+    }
+    close(XRPT);
 }
 
 sub PrintNoZeros {
-# Find lines with no billable data and discard
-        $zeros=0;
-        if ($ColorCopyUsage >0) {$zeros++;}
-        if ($BWCopyUsage >0) {$zeros++;}
-        if ($ColorPrintUsage >0) {$zeros++;}
-        if ($BWPrintUsage >0) {$zeros++;}
-        if ($NetworkImagesSentUsage >0) {$zeros++;}
-        if ($EfaxReceiveUsage >0) {$zeros++;}
-        return $zeros;
+
+    # Find lines with no billable data and discard
+    $zeros = 0;
+    if ( $ColorCopyUsage > 0 )         { $zeros++; }
+    if ( $BWCopyUsage > 0 )            { $zeros++; }
+    if ( $ColorPrintUsage > 0 )        { $zeros++; }
+    if ( $BWPrintUsage > 0 )           { $zeros++; }
+    if ( $NetworkImagesSentUsage > 0 ) { $zeros++; }
+    if ( $EfaxReceiveUsage > 0 )       { $zeros++; }
+    return $zeros;
 }
 
 sub PrintSubRoutinesUsed {
-# Print a report on which subroutines are called and how many times.
-print LOG "    WC5955: $WC5955_no\n";; 
-print "    WC5955: $WC5955_no\n";; 
-print LOG "    WC7125: $WC7125_no\n"; 
-print "    WC7125: $WC7125_no\n"; 
-print LOG "    WC5945: $WC5945_no\n";
-print "    WC5945: $WC5945_no\n";
-print LOG "    WC7830: $WC7830_no\n";
-print "    WC7830: $WC7830_no\n";
-print LOG "    WC3655: $WC3655_no\n";
-print "    WC3655: $WC3655_no\n";
-print LOG " ColorQube: $ColorQube_no\n";
-print " ColorQube: $ColorQube_no\n";
-print LOG "   newQube: $newQube_no\n";
-print "   newQube: $newQube_no\n";
-print LOG "   Qube_no: $Qube_no\n";
-print "   Qube_no: $Qube_no\n";
-print LOG "  Color_no: $Color_no\n";
-print "  Color_no: $Color_no\n";
-print LOG "yetAnother: $yetAnother_no\n";
-print "yetAnother: $yetAnother_no\n";
-print LOG "Regular_no: $Regular_no\n";
-print "Regular_no: $Regular_no\n";
-print LOG "     NoFax: $NoFax_no\n";
-print "     NoFax: $NoFax_no\n";
+
+    # Print a report on which subroutines are called and how many times.
+    print LOG "    WC5955: $WC5955_no\n";
+    print "    WC5955: $WC5955_no\n";
+    print LOG "    WC7125: $WC7125_no\n";
+    print "    WC7125: $WC7125_no\n";
+    print LOG "    WC5945: $WC5945_no\n";
+    print "    WC5945: $WC5945_no\n";
+    print LOG "    WC7830: $WC7830_no\n";
+    print "    WC7830: $WC7830_no\n";
+    print LOG "    WC3655: $WC3655_no\n";
+    print "    WC3655: $WC3655_no\n";
+    print LOG " ColorQube: $ColorQube_no\n";
+    print " ColorQube: $ColorQube_no\n";
+    print LOG "   newQube: $newQube_no\n";
+    print "   newQube: $newQube_no\n";
+    print LOG "   Qube_no: $Qube_no\n";
+    print "   Qube_no: $Qube_no\n";
+    print LOG "  Color_no: $Color_no\n";
+    print "  Color_no: $Color_no\n";
+    print LOG "yetAnother: $yetAnother_no\n";
+    print "yetAnother: $yetAnother_no\n";
+    print LOG "Regular_no: $Regular_no\n";
+    print "Regular_no: $Regular_no\n";
+    print LOG "     NoFax: $NoFax_no\n";
+    print "     NoFax: $NoFax_no\n";
 }
 
 end;

@@ -9,13 +9,12 @@
 
 use DBI;
 
-$in = "tapes.txt";
+$in    = "tapes.txt";
 $tapes = "tapes.db";
 
-if (-e $tapes) {
-	warn "$tapes exists! See perldoc sortTapes.pl\n" 
+if ( -e $tapes ) {
+    warn "$tapes exists! See perldoc sortTapes.pl\n";
 }
-		
 
 =pod
 
@@ -80,35 +79,45 @@ so that the user does not have to do it manually.
 
 =cut
 
-print "opening SQLite3 database $tapes\n" if -e $tapes or die "Aborted: $tapes does not exist.\n";
+print "opening SQLite3 database $tapes\n"
+  if -e $tapes or die "Aborted: $tapes does not exist.\n";
 
-my $rowid = 0;
-my $userid = "";
+my $rowid    = 0;
+my $userid   = "";
 my $password = "";
 my $database = "tapes.db";
-my $dsn = "DBI:SQLite:dbname=$database";
-my $sqlitedb = DBI->connect($dsn, $userid, $password, { RaiseError => 1 }) or die $DBI::errstr;
+my $dsn      = "DBI:SQLite:dbname=$database";
+my $sqlitedb = DBI->connect( $dsn, $userid, $password, { RaiseError => 1 } )
+  or die $DBI::errstr;
 print "Opened tapelist database successfully\n";
 
-open(IN,"<$in") or die "Cannot open $in: $!\n";
-while(<IN>){
-	#      202 | BAC082L6   | Full      |       1 |  7,923,104,243,712 |      464 |   31,536,000 |       1 |    0 |         0 | LTO6      | 2017-09-11 05:50:23 |
-	($null,$mediaid,$volumename,$volstatus,$enabled,$volbytes,$volfiles,$volretention,$recycle,$slot,$inchanger,$mediatype,$lastwritten) = split(/\|/);
-	$rowid++;
-	$volumename =~ s/^\s+|\s+$//g;
-	$volstatus =~ s/^\s+|\s+$//g;
-	$volbytes =~ s/^\s+|\s+$//g;
-	$volfiles =~ s/^\s+|\s+$//g;
-	$slot =~ s/^\s+|\s+$//g;
-	$inchanger =~ s/^\s+|\s+$//g;
-	$lastwritten =~ s/^\s+|\s+$//g;
-	$volbytes =~ s/\,//g;
-	$terabytes = $volbytes/1024000000000;
-	$rounded_terabytes = sprintf "%.2f", $terabytes;
-	($date,$time) = split(/\s/,$lastwritten);
-	# (testing)print "$volumename,$volstatus,$rounded_terabytes TB,$volfiles,$slot,$inchanger,$date\n";
-	my $statement = qq(INSERT INTO tapelist (rowid,volumename,volstatus,rounded_terabytes,volfiles,slot,inchanger,lastdate) VALUES (\'$rowid\',\'$volumename'\,\'$volstatus\',\'$rounded_terabytes\',\'$volfiles\',\'$slot\',\'$inchanger\',\'$date\')\;);
-	my $updatetape = $sqlitedb->prepare($statement);
-	$updatetape->execute();
+open( IN, "<$in" ) or die "Cannot open $in: $!\n";
+while (<IN>) {
+
+#      202 | BAC082L6   | Full      |       1 |  7,923,104,243,712 |      464 |   31,536,000 |       1 |    0 |         0 | LTO6      | 2017-09-11 05:50:23 |
+    (
+        $null,    $mediaid,  $volumename, $volstatus,
+        $enabled, $volbytes, $volfiles,   $volretention,
+        $recycle, $slot,     $inchanger,  $mediatype,
+        $lastwritten
+    ) = split(/\|/);
+    $rowid++;
+    $volumename  =~ s/^\s+|\s+$//g;
+    $volstatus   =~ s/^\s+|\s+$//g;
+    $volbytes    =~ s/^\s+|\s+$//g;
+    $volfiles    =~ s/^\s+|\s+$//g;
+    $slot        =~ s/^\s+|\s+$//g;
+    $inchanger   =~ s/^\s+|\s+$//g;
+    $lastwritten =~ s/^\s+|\s+$//g;
+    $volbytes    =~ s/\,//g;
+    $terabytes         = $volbytes / 1024000000000;
+    $rounded_terabytes = sprintf "%.2f", $terabytes;
+    ( $date, $time ) = split( /\s/, $lastwritten );
+
+# (testing)print "$volumename,$volstatus,$rounded_terabytes TB,$volfiles,$slot,$inchanger,$date\n";
+    my $statement =
+qq(INSERT INTO tapelist (rowid,volumename,volstatus,rounded_terabytes,volfiles,slot,inchanger,lastdate) VALUES (\'$rowid\',\'$volumename'\,\'$volstatus\',\'$rounded_terabytes\',\'$volfiles\',\'$slot\',\'$inchanger\',\'$date\')\;);
+    my $updatetape = $sqlitedb->prepare($statement);
+    $updatetape->execute();
 }
 
