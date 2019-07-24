@@ -89,8 +89,8 @@ Grabbing the current VM list from XenServers.  This need to be made more Perlish
 # Use getCurrentVMlist.sh to get this file
 # RAT 7/15/17 - I guess the early versions worked on random files.  Weird.
 # RAT 7/23/19 - Back at it.  Remarking out the file capture for testing.
-my @args = ("./getCurrentWetland.sh");
-system(@args) == 0 or die "system @args failed: $?";
+# my @args = ("./getCurrentWetland.sh");
+# system(@args) == 0 or die "system @args failed: $?";
 my $in = "Orchard.txt";
 my $cluster = "Orchard";
 my $found_uuid = 0;
@@ -116,6 +116,8 @@ my $nat = "";
 my $natQ = "";
 my $owner = "Tim";
 my $backup = "";
+my $kspice = "";
+my $spacewalk = "";
 
 =head2 Database Access
 
@@ -123,7 +125,8 @@ Opening SQLite3 database vm2.db
 
 Schema: CREATE TABLE vmlist(rowid INTEGER PRIMARY KEY AUTOINCREMENT,
 uuid TEXT, name TEXT, state TEXT, os TEXT, ram INTEGER, cpus INTEGER, 
-net TEXT, cluster TEXT, owner TEXT, backup TEXT, nat TEXT);
+net TEXT, cluster TEXT, owner TEXT, backup TEXT, nat TEXT, ksplice TEXT, 
+spacewalk TEXT);
 
 =cut
 
@@ -153,7 +156,7 @@ uuid ( RO)                 : c83c7646-db66-45e9-6b60-873dfc79621f
     memory-static-max ( RW): 4294967296
             VCPUs-max ( RW): 2
            os-version (MRO): name: Microsoft Windows Server 2012 R2 Datacenter|C:\Windows|\Device\Harddisk0\Partition2; distro: windows; major: 6; minor: 2; spmajor: 0; spminor: 0
-             networks (MRO): [redacted]
+             networks (MRO): 
                [2 blank lines]
 
 =back
@@ -226,11 +229,11 @@ while(<IN>) {
 			my $stmt = "SELECT \* FROM vmlist WHERE uuid = \'" . $uuid . "\'";
 			my $sth = $dbh->prepare($stmt);
 			$sth->execute();
-			($rowid,$uuidQ,$nameQ,$stateQ,$osQ,$ramQ,$cpusQ,$netQ,$clusterQ,$ownerQ,$backup,$natQ) = $sth->fetchrow();
+			($rowid,$uuidQ,$nameQ,$stateQ,$osQ,$ramQ,$cpusQ,$netQ,$clusterQ,$ownerQ,$backup,$natQ,$kspliceQ,$spacewalkQ) = $sth->fetchrow();
 		        if ($uuidQ eq "") {
 				$MAXrowid++;
                 		print "*** $uuid $name not found. Adding... ***\n";
-				my $stmt2 = qq(INSERT INTO vmlist (rowid,uuid,name,state,os,ram,cpus,net,cluster,owner,backup,nat) VALUES ($MAXrowid,\'$uuid\',\'$name\',\'$state\',\'$os\',\'$ram\',\'$cpus\',\'$net\',\'$cluster\',\'$owner\',\'$backup\',\'$nat\')\;);
+				my $stmt2 = qq(INSERT INTO vmlist (rowid,uuid,name,state,os,ram,cpus,net,cluster,owner,backup,nat,ksplice,spacewalk) VALUES ($MAXrowid,\'$uuid\',\'$name\',\'$state\',\'$os\',\'$ram\',\'$cpus\',\'$net\',\'$cluster\',\'$owner\',\'$backup\',\'$nat\',\'$ksplice\',\'$spacewalk\')\;);
 			my $sth = $dbh->prepare($stmt2);
 			$sth->execute();
         		} 
@@ -245,6 +248,8 @@ while(<IN>) {
 			$ownerQ = "";
 			$netQ = "";
 			$natQ = "";
+			$kspliceQ = "";
+			$spacewalkQ = "";
 			$nat = "";
 			$found_uuid = 0;
 			$found_name = 0;
