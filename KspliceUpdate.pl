@@ -11,17 +11,21 @@ my $dbh = DBI->connect($dsn, $userid, $password, { RaiseError => 1 })
                       or die $DBI::errstr;
 print "Opened database: $database successfully\n";
 
-# cut and paste from https://status-ksplice.oracle.com/status/
+# No longer pasting from https://status-ksplice.oracle.com/status/
+# KSplice Adviced: https://www.ksplice.com/uptrack/api
+# See also: https://status-ksplice.oracle.com/status/settings
+# uptrack-api-list >/tmp/ksplice.txt from Ratagin
 $ksplice = "ksplice.txt";
 
 # This is all KSpliced systems
 my $count3=0;
 open(KSPLICE,"<$ksplice") or die "Cannot open $ksplice: $!\n";
+# - lib-coral (10.217.100.121): uptodate
 while(my $line = <KSPLICE>){
-	if ($line =~ m/^$/) {
+	if ($line =~ m/^$/) {	# skipping blank lines
 		next;
 	}
-	$line =~ m/(\w+)/;	# match first word (name)
+	$line =~ m/\-\s(\w+)/;	# match first word (name)
 	$name3 = $1;		# grab first word (name)
 	$name3 = lc($name3);	# make it lower case
         chomp($name3);		# remove any trailing \n ?

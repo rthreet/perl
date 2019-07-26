@@ -83,8 +83,8 @@ foreach my $server ( $VMs->findnodes('//OvmReport/Vm') ) {
 	my $sql = qq(INSERT INTO vmlist (rowid,uuid,name,state,os,ram,cpus,net,cluster,owner,backup,nat,ksplice,spacewalk) VALUES ($MAXrowid,\'$uuid\',\'$name\',\'$state\',\'$os\',\'$ram\',\'$cpus\',\'$net\',\'$cluster\',\'$owner\',\'$backup\',\'$nat\',\'$ksplice\',\'$spacewalk\')\;);
         my $sth = $dbh->prepare($sql);
         $sth->execute();
-    }
+    } 
     $sth->finish();
-}
+}	
 print "Count: $count\n";
 

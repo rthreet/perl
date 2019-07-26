@@ -89,8 +89,8 @@ Grabbing the current VM list from XenServers.  This need to be made more Perlish
 # Use getCurrentVMlist.sh to get this file
 # RAT 7/15/17 - I guess the early versions worked on random files.  Weird.
 # RAT 7/23/19 - Back at it.  Remarking out the file capture for testing.
-# my @args = ("./getCurrentWetland.sh");
-# system(@args) == 0 or die "system @args failed: $?";
+my @args = ("./getCurrentWetland.sh");
+system(@args) == 0 or die "system @args failed: $?";
 my $in = "Rainforest.txt";
 my $cluster = "Rainforest";
 my $found_uuid = 0;
@@ -158,7 +158,7 @@ uuid ( RO)                 : c83c7646-db66-45e9-6b60-873dfc79621f
     memory-static-max ( RW): 4294967296
             VCPUs-max ( RW): 2
            os-version (MRO): name: Microsoft Windows Server 2012 R2 Datacenter|C:\Windows|\Device\Harddisk0\Partition2; distro: windows; major: 6; minor: 2; spmajor: 0; spminor: 0
-             networks (MRO): 
+             networks (MRO): 2/ip: 10.12.10.121; 2/ipv6/0: fe80:0000:0000:0000:911f:792d:0965:8c7a; 0/ip: 192.168.42.121; 0/ipv6/0: fe80:0000:0000:0000:eda1:8124:e84a:2bef
                [2 blank lines]
 
 =back
