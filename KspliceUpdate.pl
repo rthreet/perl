@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 # RAT 7/23/19
-# Add Bacucla clients to database
+# Add Ksplice clients to database
+# uptrack-api-list >/tmp/ksplice.txt from Ratagin
 
 use DBI;
 

@@ -33,7 +33,8 @@ owner TEXT,
 backup TEXT, 
 nat TEXT,
 ksplice TEXT,
-spacewalk TEXT
+spacewalk TEXT,
+other TEXT
 	);
 SQL
 	$dbh->do($sql_db);

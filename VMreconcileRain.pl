@@ -89,8 +89,8 @@ Grabbing the current VM list from XenServers.  This need to be made more Perlish
 # Use getCurrentVMlist.sh to get this file
 # RAT 7/15/17 - I guess the early versions worked on random files.  Weird.
 # RAT 7/23/19 - Back at it.  Remarking out the file capture for testing.
-my @args = ("./getCurrentWetland.sh");
-system(@args) == 0 or die "system @args failed: $?";
+#my @args = ("./getCurrentWetland.sh");
+#system(@args) == 0 or die "system @args failed: $?";
 my $in = "Rainforest.txt";
 my $cluster = "Rainforest";
 my $found_uuid = 0;

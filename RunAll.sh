@@ -1,5 +1,6 @@
 #!/bin/bash
 
+./getCurrentVMlist.sh
 ./VMreconcileWL.pl
 ./VMreconcileTARDIS.pl
 ./VMreconcileOrchard.pl
@@ -8,3 +9,4 @@
 ./BaculaUpdate.pl
 ./PalUpdate.pl
 ./KspliceUpdate.pl
+./SpaceWalk.pl
